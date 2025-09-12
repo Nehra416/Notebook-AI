@@ -2,36 +2,52 @@
 import InputBox from "@/components/InputBox";
 import { useState } from "react";
 
+interface ChatMessage {
+    id: number;
+    message: string;
+    sender: "user" | "assistant";
+}
+
 export default function Page() {
-    const [chat, setChat] = useState([
-        {
-            id: Math.random(),
-            message: "Hello, how are you?",
-            sender: "user"
-        },
-        {
-            id: Math.random(),
-            message: "I am fine, thank you!",
-            sender: "assistant"
-        },
-        {
-            id: Math.random(),
-            message: "Hello, how are you?",
-            sender: "user"
-        },
-        {
-            id: Math.random(),
-            message: "I am fine, thank you!",
-            sender: "assistant"
-        },
+    const [chat, setChat] = useState<ChatMessage[]>([]);
+    const [input, setInput] = useState<string>("");
 
-    ]);
-    const [input, setInput] = useState("");
+    const handleSend = async () => {
+        if (!input.trim()) return;
 
-    const handleSend = () => {
-        setChat([...chat, { id: Math.random(), message: input, sender: "user" }]);
+        const userMessage: ChatMessage = {
+            id: Math.random(),
+            message: input,
+            sender: "user",
+        };
+
         setInput("");
-    }
+        setChat(prev => [...prev, userMessage]);
+
+        try {
+            const response = await fetch("/api/chat", {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                method: "POST",
+                body: JSON.stringify({ userQuery: input }),
+            });
+
+            const data = await response.json();
+
+            const assistantMessage: ChatMessage = {
+                id: Math.random(),
+                message: data.answer || "No response.",
+                sender: "assistant",
+            };
+
+            setChat(prev => [...prev, assistantMessage]);
+        } catch (error) {
+            console.error("Chat error:", error);
+        }
+    };
+
+
 
     return (
         <div className="relative h-[calc(100vh-75px)] rounded-xl w-full ml-8 mr-3 py-2 px-3 bg-white dark:bg-[#22262B]">
